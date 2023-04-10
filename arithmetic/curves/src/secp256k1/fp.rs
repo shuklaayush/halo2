@@ -272,6 +272,19 @@ mod test {
     }
 
     #[test]
+    fn test_invert() {
+        let v = Fp::one().double().invert().unwrap();
+        assert!(v == Fp::TWO_INV);
+
+        for _ in 0..10000 {
+            let a = Fp::random(OsRng);
+            let b = a.invert().unwrap().invert().unwrap();
+
+            assert!(a == b);
+        }
+    }
+
+    #[test]
     fn test_field() {
         crate::tests::field::random_field_tests::<Fp>("secp256k1 base".to_string());
     }
