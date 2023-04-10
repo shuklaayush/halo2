@@ -5,6 +5,7 @@
 mod arithmetic;
 
 pub mod bn256;
+pub mod ed25519;
 pub mod pairing;
 pub mod pasta;
 pub mod secp256k1;
