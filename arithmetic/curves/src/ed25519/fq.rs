@@ -7,90 +7,100 @@ use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use pasta_curves::arithmetic::{FieldExt, Group, SqrtRatio};
-
 use crate::arithmetic::{adc, mac, macx, sbb};
 
-/// This represents an element of $\mathbb{F}_p$ where
+use pasta_curves::arithmetic::{FieldExt, Group, SqrtRatio};
+
+/// This represents an element of $\mathbb{F}_q$ where
 ///
-/// `p = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed`
+/// `q = 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed`
 ///
-/// is the base field of the ed25519 curve.
+/// is the scalar field of the ed25519 curve.
 // The internal representation of this type is four 64-bit unsigned
-// integers in little-endian order. `Fp` values are always in
-// Montgomery form; i.e., Fp(a) = aR mod p, with R = 2^256.
+// integers in little-endian order. `Fq` values are always in
+// Montgomery form; i.e., Fq(a) = aR mod q, with R = 2^256.
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub struct Fp(pub(crate) [u64; 4]);
+pub struct Fq(pub(crate) [u64; 4]);
 
 /// Constant representing the modulus
-/// p = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed
-const MODULUS: Fp = Fp([
-    0xffffffffffffffed,
-    0xffffffffffffffff,
-    0xffffffffffffffff,
-    0x7fffffffffffffff,
+/// q = 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed
+const MODULUS: Fq = Fq([
+    0x5812631a5cf5d3ed,
+    0x14def9dea2f79cd6,
+    0x0000000000000000,
+    0x1000000000000000,
 ]);
 
 /// The modulus as u32 limbs.
 #[cfg(not(target_pointer_width = "64"))]
 const MODULUS_LIMBS_32: [u32; 8] = [
-    0xffff_ffed,
-    0xffff_fffe,
-    0xffff_ffff,
-    0xffff_ffff,
-    0xffff_ffff,
-    0xffff_ffff,
-    0xffff_ffff,
-    0x7fff_ffff,
+    0x5cf5_d3ed,
+    0x5812_631a,
+    0xa2f7_9cd6,
+    0x14de_f9de,
+    0x0000_0000,
+    0x0000_0000,
+    0x0000_0000,
+    0x1000_0000,
 ];
 
-/// Constant representing the modolus as static str
-const MODULUS_STR: &str = "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed";
+///Constant representing the modulus as static str
+const MODULUS_STR: &str = "0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed";
 
-/// INV = -(p^{-1} mod 2^64) mod 2^64
-const INV: u64 = 0x86bca1af286bca1b;
+/// INV = -(q^{-1} mod 2^64) mod 2^64
+const INV: u64 = 0xd2b51da312547e1b;
 
-/// R = 2^256 mod p
-/// 0x26
-const R: Fp = Fp([0x26, 0, 0, 0]);
+/// R = 2^256 mod q
+/// 0xffffffffffffffffffffffffffffffec6ef5bf4737dcf70d6ec31748d98951d
+const R: Fq = Fq([0xd6ec31748d98951d, 0xc6ef5bf4737dcf70, 0xfffffffffffffffe, 0x0fffffffffffffff]);
 
-/// R^2 = 2^512 mod p
-/// 0x5a4
-const R2: Fp = Fp([0x5a4, 0, 0, 0]);
+/// R^2 = 2^512 mod q
+/// 0x399411b7c309a3dceec73d217f5be65d00e1ba768859347a40611e3449c0f01
+const R2: Fq = Fq([
+    0xa40611e3449c0f01,
+    0xd00e1ba768859347,
+    0xceec73d217f5be65,
+    0x0399411b7c309a3d,
+]);
 
-/// R^3 = 2^768 mod p
-/// 0xd658
-const R3: Fp = Fp([0xd658, 0, 0, 0]);
+/// R^3 = 2^768 mod q
+/// 0xe530b773599cec78065dc6c04ec5b65278324e6aef7f3ec2a9e49687b83a2db
+const R3: Fq = Fq([
+    0x2a9e49687b83a2db,
+    0x278324e6aef7f3ec,
+    0x8065dc6c04ec5b65,
+    0x0e530b773599cec7,
+]);
 
-/// 1 / 2 mod p
-const TWO_INV: Fp = Fp::from_raw([
-    0xfffffffffffffff7,
-    0xffffffffffffffff,
-    0xffffffffffffffff,
-    0x3fffffffffffffff,
+/// 1 / 2 mod q
+const TWO_INV: Fq = Fq::from_raw([
+    0x2c09318d2e7ae9f7,
+    0x0a6f7cef517bce6b,
+    0x0000000000000000,
+    0x0800000000000000,
 ]);
 
 /// sqrt(-1) mod p = 2^((p - 1) / 4) mod p
-const SQRT_MINUS_ONE: Fp = Fp::from_raw([
-    0xc4ee1b274a0ea0b0,
-    0x2f431806ad2fe478,
-    0x2b4d00993dfbd7a7,
-    0x2b8324804fc1df0b,
+const SQRT_MINUS_ONE: Fq = Fq::from_raw([
+    0xbe8775dfebbe07d4,
+    0x0ef0565342ce83fe,
+    0x7d3d6d60abc1c27a,
+    0x094a7310e07981e7,
 ]);
 
-const ZETA: Fp = Fp::zero();
-const DELTA: Fp = Fp::zero();
-const ROOT_OF_UNITY_INV: Fp = Fp::zero();
+const ZETA: Fq = Fq::zero();
+const DELTA: Fq = Fq::zero();
+const ROOT_OF_UNITY_INV: Fq = Fq::zero();
 
 use crate::{
     field_arithmetic, field_common, field_specific, impl_add_binop_specify_output,
     impl_binops_additive, impl_binops_additive_specify_output, impl_binops_multiplicative,
     impl_binops_multiplicative_mixed, impl_sub_binop_specify_output,
 };
-impl_binops_additive!(Fp, Fp);
-impl_binops_multiplicative!(Fp, Fp);
+impl_binops_additive!(Fq, Fq);
+impl_binops_multiplicative!(Fq, Fq);
 field_common!(
-    Fp,
+    Fq,
     MODULUS,
     INV,
     MODULUS_STR,
@@ -102,15 +112,15 @@ field_common!(
     R2,
     R3
 );
-field_arithmetic!(Fp, MODULUS, INV, dense);
+field_arithmetic!(Fq, MODULUS, INV, dense);
 
-impl Fp {
+impl Fq {
     pub const fn size() -> usize {
         32
     }
 }
 
-impl ff::Field for Fp {
+impl ff::Field for Fq {
     fn random(mut rng: impl RngCore) -> Self {
         Self::from_u512([
             rng.next_u64(),
@@ -150,10 +160,10 @@ impl ff::Field for Fp {
         //        OR
         //        Doesn't exist
         let x1 = self.pow(&[
-            0xfffffffffffffffe,
-            0xffffffffffffffff,
-            0xffffffffffffffff,
-            0x0fffffffffffffff,
+            0xcb024c634b9eba7e,
+            0x029bdf3bd45ef39a,
+            0x0000000000000000,
+            0x0200000000000000,
         ]);
 
         let choice1 = x1.square().ct_eq(&self);
@@ -167,12 +177,11 @@ impl ff::Field for Fp {
     /// Computes the multiplicative inverse of this element,
     /// failing if the element is zero.
     fn invert(&self) -> CtOption<Self> {
-        // a^(-1) = a^(p - 2)
         let tmp = self.pow_vartime([
-            0xffffffffffffffeb,
-            0xffffffffffffffff,
-            0xffffffffffffffff,
-            0x7fffffffffffffff,
+            0x5812631a5cf5d3eb,
+            0x14def9dea2f79cd6,
+            0x0000000000000000,
+            0x1000000000000000,
         ]);
 
         CtOption::new(tmp, !self.ct_eq(&Self::zero()))
@@ -197,15 +206,15 @@ impl ff::Field for Fp {
     }
 }
 
-impl ff::PrimeField for Fp {
+impl ff::PrimeField for Fq {
     type Repr = [u8; 32];
 
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
-    const S: u32 = 1;
+    const S: u32 = 6;
 
     fn from_repr(repr: Self::Repr) -> CtOption<Self> {
-        let mut tmp = Fp([0, 0, 0, 0]);
+        let mut tmp = Fq([0, 0, 0, 0]);
 
         tmp.0[0] = u64::from_le_bytes(repr[0..8].try_into().unwrap());
         tmp.0[1] = u64::from_le_bytes(repr[8..16].try_into().unwrap());
@@ -233,7 +242,7 @@ impl ff::PrimeField for Fp {
     fn to_repr(&self) -> Self::Repr {
         // Turn into canonical form by computing
         // (a.R) / R = a
-        let tmp = Fp::montgomery_reduce_short(self.0[0], self.0[1], self.0[2], self.0[3]);
+        let tmp = Fq::montgomery_reduce_short(self.0[0], self.0[1], self.0[2], self.0[3]);
 
         let mut res = [0; 32];
         res[0..8].copy_from_slice(&tmp.0[0].to_le_bytes());
@@ -257,11 +266,11 @@ impl ff::PrimeField for Fp {
     }
 }
 
-impl SqrtRatio for Fp {
+impl SqrtRatio for Fq {
     const T_MINUS1_OVER2: [u64; 4] = [0, 0, 0, 0];
 
     fn get_lower_32(&self) -> u32 {
-        let tmp = Fp::montgomery_reduce_short(self.0[0], self.0[1], self.0[2], self.0[3]);
+        let tmp = Fq::montgomery_reduce_short(self.0[0], self.0[1], self.0[2], self.0[3]);
         tmp.0[0] as u32
     }
 }
@@ -275,11 +284,11 @@ mod test {
     #[test]
     fn test_sqrt() {
         // NB: TWO_INV is standing in as a "random" field element
-        let v = (Fp::TWO_INV).square().sqrt().unwrap();
-        assert!(v == Fp::TWO_INV || (-v) == Fp::TWO_INV);
+        let v = (Fq::TWO_INV).square().sqrt().unwrap();
+        assert!(v == Fq::TWO_INV || (-v) == Fq::TWO_INV);
 
         for _ in 0..10000 {
-            let a = Fp::random(OsRng);
+            let a = Fq::random(OsRng);
             let mut b = a;
             b = b.square();
 
@@ -293,11 +302,11 @@ mod test {
 
     #[test]
     fn test_invert() {
-        let v = Fp::one().double().invert().unwrap();
-        assert!(v == Fp::TWO_INV);
+        let v = Fq::one().double().invert().unwrap();
+        assert!(v == Fq::TWO_INV);
 
         for _ in 0..10000 {
-            let a = Fp::random(OsRng);
+            let a = Fq::random(OsRng);
             let b = a.invert().unwrap().invert().unwrap();
 
             assert!(a == b);
@@ -306,11 +315,12 @@ mod test {
 
     #[test]
     fn test_field() {
-        crate::tests::field::random_field_tests::<Fp>("ed25519 base".to_string());
+        crate::tests::field::random_field_tests::<Fq>("ed25519 scalar".to_string());
     }
 
     #[test]
     fn test_serialization() {
-        crate::tests::field::random_serialization_test::<Fp>("ed25519 base".to_string());
+        crate::tests::field::random_serialization_test::<Fq>("ed25519 scalar".to_string());
     }
 }
+
