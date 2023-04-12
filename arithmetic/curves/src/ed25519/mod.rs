@@ -1,1 +1,1 @@
-pub use ed25519::{Fq as Fp, Fr as Fq, AffinePoint as Ed25519Affine};
+pub use ed25519::{AffinePoint as Ed25519Affine, Fq as Fp, Fr as Fq};

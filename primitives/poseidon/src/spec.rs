@@ -349,10 +349,7 @@ impl<F: FieldExt, const T: usize, const RATE: usize> Spec<F, T, RATE> {
             *optimized = tmp[0];
 
             tmp[0] = F::zero();
-            for ((acc, tmp), constant) in acc
-                .iter_mut()
-                .zip(tmp.into_iter())
-                .zip(constants.iter())
+            for ((acc, tmp), constant) in acc.iter_mut().zip(tmp.into_iter()).zip(constants.iter())
             {
                 *acc = tmp + constant
             }
