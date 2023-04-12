@@ -1,5 +1,1 @@
-mod fp;
-mod fq;
-
-pub use fp::*;
-pub use fq::*;
+pub use ed25519::{Fq, Fr, AffinePoint as Ed25519Affine};
