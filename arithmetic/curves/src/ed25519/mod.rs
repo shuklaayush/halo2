@@ -1,1 +1,1 @@
-pub use ed25519::{AffinePoint as Ed25519Affine, Fq as Fp, Fr as Fq};
+pub use ed25519::{SubgroupPointAffine as Ed25519Affine, Fq, Fr};
