@@ -16,6 +16,7 @@ description = "Elliptic curve implementations and wrappers for halo2 library"
 criterion = { version = "0.3", features = ["html_reports"] }
 rand_xorshift = "0.3"
 ark-std = { version = "0.3", features = ["print-trace"] }
+sha2 = "0.9"
 
 [dependencies]
 subtle = "2.4"
