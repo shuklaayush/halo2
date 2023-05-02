@@ -714,7 +714,7 @@ impl CurveAffine for Ed25519Affine {
     }
 
     fn b() -> Self::Base {
-        unimplemented!()
+        ED25519_D
     }
 }
 
