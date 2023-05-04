@@ -153,6 +153,10 @@ impl Ed25519 {
             t: e * h,
         }
     }
+
+    pub fn d() -> Fq {
+        ED25519_D
+    }
 }
 
 impl Ed25519 {
@@ -278,6 +282,10 @@ impl Ed25519Affine {
                 })
         })
     }
+
+    pub fn d() -> Fq {
+        ED25519_D
+    }
 }
 
 // Compressed
@@ -377,11 +385,11 @@ impl CurveExt for Ed25519 {
         !self.z.is_zero() & affine.is_on_curve() & (affine.x * affine.y * self.z).ct_eq(&self.t)
     }
 
-    fn b() -> Self::Base {
+    fn a() -> Self::Base {
         unimplemented!()
     }
 
-    fn a() -> Self::Base {
+    fn b() -> Self::Base {
         unimplemented!()
     }
 
@@ -714,7 +722,7 @@ impl CurveAffine for Ed25519Affine {
     }
 
     fn b() -> Self::Base {
-        ED25519_D
+        unimplemented!()
     }
 }
 
@@ -829,8 +837,9 @@ impl<'a, 'b> Mul<&'b Fr> for &'a Ed25519 {
     // This is a simple double-and-add implementation of point
     // multiplication, moving from most significant to least
     // significant bit of the scalar.
-
-    // TODO
+    //
+    // We skip the leading three bits because they're always
+    // unset for Fr.
     fn mul(self, other: &'b Fr) -> Self::Output {
         let mut acc = Ed25519::identity();
         for bit in other
@@ -838,6 +847,7 @@ impl<'a, 'b> Mul<&'b Fr> for &'a Ed25519 {
             .iter()
             .rev()
             .flat_map(|byte| (0..8).rev().map(move |i| Choice::from((byte >> i) & 1u8)))
+            .skip(3)
         {
             acc = acc.double();
             acc = Ed25519::conditional_select(&acc, &(acc + self), bit);
@@ -902,14 +912,15 @@ impl<'a, 'b> Sub<&'a Ed25519> for &'b Ed25519Affine {
 impl<'a, 'b> Mul<&'b Fr> for &'a Ed25519Affine {
     type Output = Ed25519;
 
-    // TODO
     fn mul(self, other: &'b Fr) -> Self::Output {
         let mut acc = Ed25519::identity();
 
         // This is a simple double-and-add implementation of point
         // multiplication, moving from most significant to least
         // significant bit of the scalar.
-
+        //
+        // We skip the leading three bits because they're always
+        // unset for Fr.
         for bit in other
             .to_repr()
             .iter()
@@ -925,7 +936,6 @@ impl<'a, 'b> Mul<&'b Fr> for &'a Ed25519Affine {
 }
 
 impl CurveAffineExt for Ed25519Affine {
-    // TODO
     fn batch_add<const COMPLETE: bool, const LOAD_POINTS: bool>(
         _points: &mut [Self],
         _output_indices: &[u32],
@@ -997,6 +1007,7 @@ fn test_serialization() {
 }
 
 #[test]
+#[allow(non_snake_case)]
 fn eddsa_example() {
     use crate::group::cofactor::CofactorGroup;
     use pasta_curves::arithmetic::FieldExt;
@@ -1038,7 +1049,6 @@ fn eddsa_example() {
         };
 
         // Compute the public key as A = [s]B.
-        // TODO: Allow reverse multiplication operation
         let A = Ed25519::generator() * &s;
 
         let A_bytes = A.to_bytes().0;
@@ -1092,8 +1102,6 @@ fn eddsa_example() {
 
     use rand_core::OsRng;
     let mut rng = OsRng;
-
-    let B = Ed25519Affine::generator();
 
     for _ in 0..1000 {
         // Generate a key pair
