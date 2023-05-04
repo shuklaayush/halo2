@@ -153,10 +153,6 @@ impl Ed25519 {
             t: e * h,
         }
     }
-
-    pub fn d() -> Fq {
-        ED25519_D
-    }
 }
 
 impl Ed25519 {
@@ -282,10 +278,6 @@ impl Ed25519Affine {
                 })
         })
     }
-
-    pub fn d() -> Fq {
-        ED25519_D
-    }
 }
 
 // Compressed
@@ -390,7 +382,7 @@ impl CurveExt for Ed25519 {
     }
 
     fn b() -> Self::Base {
-        unimplemented!()
+        ED25519_D
     }
 
     fn new_jacobian(_x: Self::Base, _y: Self::Base, _z: Self::Base) -> CtOption<Self> {
@@ -722,7 +714,7 @@ impl CurveAffine for Ed25519Affine {
     }
 
     fn b() -> Self::Base {
-        unimplemented!()
+        ED25519_D
     }
 }
 
