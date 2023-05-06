@@ -436,49 +436,25 @@ impl<F: Field> Assignment<F> for Layout {
         Ok(Value::unknown())
     }
 
-    fn assign_advice<V, VR, A, AR>(
-        &mut self,
-        _: A,
+    fn assign_advice<'r, 'v>(
+        &'r mut self,
         column: Column<Advice>,
         row: usize,
-        _: V,
-    ) -> Result<(), Error>
-    where
-        V: FnOnce() -> Value<VR>,
-        VR: Into<Assigned<F>>,
-        A: FnOnce() -> AR,
-        AR: Into<String>,
-    {
+        _: Value<Assigned<F>>,
+    ) -> Value<&'v Assigned<F>> {
         self.update(Column::<Any>::from(column).into(), row);
-        Ok(())
+        Value::unknown()
+        // Ok(())
     }
 
-    fn assign_fixed<V, VR, A, AR>(
-        &mut self,
-        _: A,
-        column: Column<Fixed>,
-        row: usize,
-        _: V,
-    ) -> Result<(), Error>
-    where
-        V: FnOnce() -> Value<VR>,
-        VR: Into<Assigned<F>>,
-        A: FnOnce() -> AR,
-        AR: Into<String>,
-    {
+    fn assign_fixed(&mut self, column: Column<Fixed>, row: usize, _: Assigned<F>) {
         self.update(Column::<Any>::from(column).into(), row);
-        Ok(())
+        // Ok(())
     }
 
-    fn copy(
-        &mut self,
-        l_col: Column<Any>,
-        l_row: usize,
-        r_col: Column<Any>,
-        r_row: usize,
-    ) -> Result<(), crate::plonk::Error> {
+    fn copy(&mut self, l_col: Column<Any>, l_row: usize, r_col: Column<Any>, r_row: usize) {
         self.equality.push((l_col, l_row, r_col, r_row));
-        Ok(())
+        // Ok(())
     }
 
     fn fill_from_row(
