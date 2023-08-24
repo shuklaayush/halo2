@@ -199,6 +199,13 @@ impl<'p, 'a, F: Field, CS: Assignment<F> + SyncDeps> Layouter<F> for V1Pass<'p, 
         }
     }
 
+    fn query_instance(&self, column: Column<Instance>, row: usize) -> Result<Value<F>, Error> {
+        match &self.0 {
+            Pass::Measurement(_) => Ok(Value::unknown()),
+            Pass::Assignment(pass) => pass.plan.cs.query_instance(column, row),
+        }
+    }
+
     fn get_challenge(&self, challenge: Challenge) -> Value<F> {
         match &self.0 {
             Pass::Measurement(_) => Value::unknown(),

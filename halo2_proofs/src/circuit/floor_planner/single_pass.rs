@@ -216,6 +216,10 @@ impl<'a, F: Field, CS: Assignment<F> + 'a + SyncDeps> Layouter<F>
         )
     }
 
+    fn query_instance(&self, column: Column<Instance>, row: usize) -> Result<Value<F>, Error> {
+        self.cs.query_instance(column, row)
+    }
+
     fn get_challenge(&self, challenge: Challenge) -> Value<F> {
         self.cs.get_challenge(challenge)
     }

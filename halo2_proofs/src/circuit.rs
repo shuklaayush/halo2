@@ -454,6 +454,11 @@ pub trait Layouter<F: Field> {
         row: usize,
     ) -> Result<(), Error>;
 
+    /// Queries the cell of an instance column at a particular absolute row.
+    ///
+    /// Returns the cell's value, if known.
+    fn query_instance(&self, column: Column<Instance>, row: usize) -> Result<Value<F>, Error>;
+
     /// Queries the value of the given challenge.
     ///
     /// Returns `Value::unknown()` if the current synthesis phase is before the challenge can be queried.
@@ -522,6 +527,10 @@ impl<'a, F: Field, L: Layouter<F> + 'a> Layouter<F> for NamespacedLayouter<'a, F
         row: usize,
     ) -> Result<(), Error> {
         self.0.constrain_instance(cell, column, row)
+    }
+
+    fn query_instance(&self, column: Column<Instance>, row: usize) -> Result<Value<F>, Error> {
+        self.0.query_instance(column, row)
     }
 
     fn get_challenge(&self, challenge: Challenge) -> Value<F> {
