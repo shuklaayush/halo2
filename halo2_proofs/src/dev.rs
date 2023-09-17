@@ -34,8 +34,8 @@ mod util;
 mod failure;
 pub use failure::{FailureLocation, VerifyFailure};
 
-//pub mod cost;
-//pub use cost::CircuitCost;
+pub mod cost;
+pub use cost::CircuitCost;
 
 mod gates;
 pub use gates::CircuitGates;

@@ -196,49 +196,47 @@ impl<F: Field> Assignment<F> for Layout {
         Ok(Value::unknown())
     }
 
-    fn assign_advice(
+    fn assign_advice<'v>(
         //<V, VR, A, AR>(
         &mut self,
         //_: A,
-        _: Column<Advice>,
-        _: usize,
+        column: Column<Advice>,
+        row: usize,
         to: Value<Assigned<F>>,
-    ) -> Result<Value<&Assigned<F>>, Error>
+    ) -> Value<&'v Assigned<F>>
+// ) -> Result<Value<&Assigned<F>>, Error>
 /*where
         V: FnOnce() -> Value<VR>,
         VR: Into<Assigned<F>>,
         A: FnOnce() -> AR,
         AR: Into<String>,*/ {
         self.update(Column::<Any>::from(column).into(), row);
-        Ok(to.as_ref())
+        match to.assign() {
+            Ok(to) => {
+                use std::sync::Arc;
+                let val = Arc::new(to);
+                let val_ref = Arc::downgrade(&val);
+                Value::known(unsafe { &*val_ref.as_ptr() })
+            }
+            Err(_) => Value::unknown(),
+        }
     }
 
-    fn assign_fixed<V, VR, A, AR>(
-        &mut self,
-        _: A,
-        column: Column<Fixed>,
-        row: usize,
-        _: V,
-    ) -> Result<(), Error>
-    where
-        V: FnOnce() -> Value<VR>,
-        VR: Into<Assigned<F>>,
-        A: FnOnce() -> AR,
-        AR: Into<String>,
+    fn assign_fixed(&mut self, column: Column<Fixed>, row: usize, _to: Assigned<F>)
+    // -> Result<(), Error>
+    /*where
+    V: FnOnce() -> Value<VR>,
+    VR: Into<Assigned<F>>,
+    A: FnOnce() -> AR,
+    AR: Into<String>,*/
     {
         self.update(Column::<Any>::from(column).into(), row);
-        Ok(())
     }
 
-    fn copy(
-        &mut self,
-        l_col: Column<Any>,
-        l_row: usize,
-        r_col: Column<Any>,
-        r_row: usize,
-    ) -> Result<(), crate::plonk::Error> {
+    fn copy(&mut self, l_col: Column<Any>, l_row: usize, r_col: Column<Any>, r_row: usize)
+    // -> Result<(), crate::plonk::Error>
+    {
         self.equality.push((l_col, l_row, r_col, r_row));
-        Ok(())
     }
 
     fn fill_from_row(

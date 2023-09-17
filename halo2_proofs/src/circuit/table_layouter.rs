@@ -82,16 +82,13 @@ impl<'r, 'a, F: Field, CS: Assignment<F> + 'a> TableLayouter<F>
 
         let entry = self.default_and_assigned.entry(column).or_default();
 
-        let mut value = Value::unknown();
+        let res = to();
+        let value = res;
         self.cs.assign_fixed(
             // annotation,
             column.inner(),
             offset, // tables are always assigned starting at row 0
-            {
-                let res = to();
-                value = res;
-                res.assign()?
-            },
+            res.assign()?,
         );
 
         match (entry.0.is_none(), offset) {

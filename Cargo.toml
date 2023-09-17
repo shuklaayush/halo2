@@ -18,3 +18,6 @@ incremental = false
 panic = "abort"
 # codegen-units = 1 is not optimal on my machine; always profile locally to determine best preferences
 # codegen-units = 1
+
+[patch.crates-io]
+pathfinder_simd = { package = "pathfinder_simd", git = "https://github.com/servo/pathfinder" }
